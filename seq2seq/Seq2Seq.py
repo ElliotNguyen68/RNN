@@ -89,7 +89,7 @@ class Seq2Seq(nn.Module):
             # use target as input to train
             out,hidden=self.decoder(torch.tensor([[0]],device=device),hidden)
             output.append(self.lang_out.index2word[out.topk(1)[1].item()])
-            for i in range(1,target.shape[0]-1):
+            for i in range(target.shape[0]-1):
                 out,hidden=self.decoder(target[i].view(1,1),hidden)
                 output.append(self.lang_out.index2word[out.topk(1)[1].item()])
                 # print(out.shape)
@@ -100,7 +100,7 @@ class Seq2Seq(nn.Module):
             index=out.topk(1)[1].item()
             output.append(self.lang_out.index2word[index])
             out=torch.tensor([[index]],device=device)
-            for i in range(1,target.shape[0]-1):
+            for i in range(target.shape[0]-1):
                 out,hidden=self.decoder(out.view(1,-1),hidden)
                 loss+=self.criterion(out.view(1,-1),target[i+1].view(1))
                 index=out.topk(1)[1].item()
