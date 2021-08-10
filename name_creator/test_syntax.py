@@ -1,0 +1,15 @@
+import torch
+import torch.nn as nn
+l=torch.nn.NLLLoss()
+sof=torch.nn.LogSoftmax(dim=1)
+b=torch.rand((1,59))
+c=torch.tensor([0])
+b=sof(b)
+print(l(b,c))
+a=torch.tensor([1,4,2])
+gru=nn.GRU(3,10,2)
+a_view=a.view(1,1,-1)
+e=a.unsqueeze(0)
+print(e.storage()==a.storage())
+print(a.storage()==a_view.storage())
+em=nn.Embedding(10,3)
