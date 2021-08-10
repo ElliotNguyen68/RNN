@@ -55,6 +55,15 @@ class RNN_de(nn.Module):
         return out,hidden
 
 class Seq2Seq(nn.Module):
+    """
+        init:
+            lang_in,lang_out:class lang
+        forward:
+            sentence: a tensor of index word in lang within a sentence, ex: [25,63,102], where each element represent an index in the vocab
+            target: just as sentence, but for the target
+            train: if True train mode else eval mode
+            p: probability of using teacher forcing, [0,1), if >0.5 then use else none
+    """  
     def __init__(self,lang_in,lang_out,criterion,hidden_size,num_layer) -> None:
         super().__init__()
         self.encoder=RNN_en(lang_in.n_words,hidden_size,embedding_size=128,num_layer=num_layer)
