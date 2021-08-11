@@ -113,6 +113,7 @@ import time
 if __name__=="__main__":
     input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
     t1=time.time()
+    print(len(pairs))
     for x in range(10):
         rand=random.choice(pairs)
         print(rand)

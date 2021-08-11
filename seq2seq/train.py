@@ -1,7 +1,7 @@
 from utils import *
-from rnn import *
+# from Seq2Seq import *
 import random
-    
+from Seq2Seq_bi import *
 
 def train(epochs,iterations,model,pairs,lang_in,lang_out):
     for epoch in range(epochs):
@@ -17,5 +17,5 @@ def train(epochs,iterations,model,pairs,lang_in,lang_out):
 if __name__=="__main__":
     input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
     loss=nn.NLLLoss()
-    rnn=Seq2Seq(input_lang,output_lang,loss,128,2).to(device)
+    rnn=Seq2Seq(input_lang,output_lang,loss,256,2).to(device)
     train(1000,100,rnn,pairs,input_lang,output_lang)
