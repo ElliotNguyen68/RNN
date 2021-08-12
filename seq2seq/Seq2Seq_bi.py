@@ -1,3 +1,6 @@
+from time import sleep
+from torch._C import ScriptModule, set_flush_denormal
+from torch.jit import script_if_tracing
 import torch.nn as nn
 import torch
 from utils import *
@@ -117,23 +120,96 @@ class Seq2Seq(nn.Module):
             return loss,output
         else:
             print(f"{loss:4f}")
-            print(f"predict: {' '.join(str(i)for i in output)}")
-            
+            print(f"greedy search: {' '.join(str(i)for i in output)}")
+
+
+    def decode_beam_search(self,input_sentence,num_k=2):#only in eval, to find best sentence
+        def clear(a,length,length_input):
+            for i,x in enumerate(a):
+                if len(x.arr)<length and len(a)>num_k: 
+                    a.pop(i)
+        self.eval()
+        topk=[]#contain top k least negative score
+        _,hidden=self.encoder(input_sentence)
+        SOS=thread_sentence("SOS",-10,hidden)
+        x=SOS
+        word=x.arr[-1]
+        hidden_word=x.hidden
+        input=torch.tensor([[self.lang_out.word2index[word]]],device=device)
+        out,hidden_word=self.decoder(input,hidden_word)
+        scores,index=out.topk(num_k)
+        scores=scores.view(num_k)
+        index=index.view(num_k)
+        for score,i in zip(scores,index):
+            current_thread=thread_sentence(self.lang_out.index2word[i.item()],score.item(),hidden_word)
+            current_thread.append_head(x)
+            topk.append(current_thread)
+        step=0
+        limit_height=10000
+        all_EOS=True
+        lenght_current=1
+        ended_sentences=[]
+        while step<limit_height:
+            x=topk[step%num_k]
+        # for id,x in enumerate(topk):
+            word=x.arr[-1]
+            hidden_word=x.hidden
+            if word not in ['.','!','?','EOS'] :
+                input=torch.tensor([[self.lang_out.word2index[word]]],device=device)
+                out,hidden_word=self.decoder(input,hidden_word)
+                scores,index=out.topk(num_k)
+                scores=scores.view(num_k)
+                index=index.view(num_k)
+                for score,i in zip(scores,index):
+                    current_thread=thread_sentence(self.lang_out.index2word[i.item()],score.item(),hidden_word)
+                    current_thread.append_head(x)
+                    lenght_current=max(lenght_current,len(current_thread.arr))
+                    # print(current_thread.arr)
+                    topk.append(current_thread)
+                # topk.pop(id)
+                all_EOS=False
+            else: 
+                ended_sentences.append(x)
+            # topk.sort(key=lambda x: x.score,reverse=True)
+            step+=1
+            if step>0 and (step)%num_k==0: 
+                clear(topk,lenght_current,input_sentence.shape[0])
+                topk.sort(key=lambda x: x.score,reverse=True)
+                topk=topk[:num_k]
+                # print(id,len(topk))
+            if all_EOS or step>limit_height : break
+        ended_sentences.sort(key=lambda x: x.score,reverse=True)
+        print(f"beam search: {' '.join(ended_sentences[0].arr) }")
+                
+class thread_sentence:
+    def __init__(self,word,current_score,hidden) -> None:
+        self.score=current_score
+        self.arr=[word]
+        self.hidden=hidden
+    def append_head(self,old_thread):
+        tmp=old_thread.arr[:]
+        tmp.extend(self.arr)
+        self.arr=tmp
+        step=len(self.arr)
+        self.score+=old_thread.score*(step-1)
+        self.score/=step
+
 
 if __name__=="__main__": 
     input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
     rand=random.choice(pairs)
     input,output=tensorFromPair(rand,input_lang,output_lang)
-    # num_vocab_in=input_lang.n_words
-    # num_vocab_out=output_lang.n_words
-    # rnn_en=RNN_en(num_vocab_in,32,9,2).to(device)
-    # out,hidden=rnn_en(input)
+    num_vocab_in=input_lang.n_words
+    num_vocab_out=output_lang.n_words
+    rnn_en=RNN_en(num_vocab_in,32,9,2).to(device)
+    out,hidden=rnn_en(input)
+    print(out.shape)
     # rnn_de=RNN_de(num_vocab_out,32,8,4).to(device=device)
     # in_tensor=torch.tensor([[0]]).to(device)
     # out,hidden=rnn_de(in_tensor,hidden)
-    loss=nn.NLLLoss()
-    seq2seq=Seq2Seq(lang_in=input_lang,lang_out=output_lang,criterion=loss,hidden_size=32,num_layer=2).to(device)
-    seq2seq(input,output,p=1)
+    # loss=nn.NLLLoss()
+    # seq2seq=Seq2Seq(lang_in=input_lang,lang_out=output_lang,criterion=loss,hidden_size=32,num_layer=2).to(device)
+    # seq2seq(input,output,p=1)
 
     
 

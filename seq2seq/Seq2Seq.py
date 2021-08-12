@@ -90,7 +90,6 @@ class Seq2Seq(nn.Module):
             out,hidden=self.decoder(torch.tensor([[0]],device=device),hidden)
             loss+=self.criterion(out.view(1,-1),target[0].view(1))
             output.append(self.lang_out.index2word[out.topk(1)[1].item()])
-            """ this must be in range(0,target.shape[0]-1)->MISTAKE->lack of subject(he,she,i,we)"""
             for i in range(target.shape[0]-1):
                 out,hidden=self.decoder(target[i].view(1,1),hidden)
                 output.append(self.lang_out.index2word[out.topk(1)[1].item()])
@@ -103,7 +102,6 @@ class Seq2Seq(nn.Module):
             loss+=self.criterion(out.view(1,-1),target[0].view(1))
             output.append(self.lang_out.index2word[index])
             out=torch.tensor([[index]],device=device)
-            """ this must be in range(0,target.shape[0]-1)->MISTAKE->lack of subject(he,she,i,we)"""
             for i in range(1,target.shape[0]-1):
                 out,hidden=self.decoder(out.view(1,-1),hidden)
                 loss+=self.criterion(out.view(1,-1),target[i+1].view(1))

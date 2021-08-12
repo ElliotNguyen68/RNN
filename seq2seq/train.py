@@ -18,4 +18,4 @@ if __name__=="__main__":
     input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
     loss=nn.NLLLoss()
     rnn=Seq2Seq(input_lang,output_lang,loss,256,2).to(device)
-    train(1000,100,rnn,pairs,input_lang,output_lang)
+    train(100,1,rnn,pairs,input_lang,output_lang)

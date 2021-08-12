@@ -17,7 +17,7 @@ EOS_token = 1
 class Lang:
     def __init__(self, name):
         self.name = name
-        self.word2index = {}
+        self.word2index = {"SOS":0,"EOS":1}
         self.word2count = {}
         self.index2word = {0: "SOS", 1: "EOS"}
         self.n_words = 2  # Count SOS and EOS
@@ -112,11 +112,4 @@ def tensorFromSentence(line,lang):
 import time
 if __name__=="__main__":
     input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
-    t1=time.time()
-    print(len(pairs))
-    for x in range(10):
-        rand=random.choice(pairs)
-        print(rand)
-        print(tensorFromPair(rand,input_lang,output_lang))
-    t2=time.time()
-    print(t2-t1)
+    print(output_lang.word2index["SOS"])
