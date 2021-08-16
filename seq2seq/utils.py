@@ -1,4 +1,5 @@
 from __future__ import unicode_literals, print_function, division
+import time
 from io import open
 import glob
 import os
@@ -10,14 +11,17 @@ import re
 import random
 def findFiles(path): return glob.glob(path)
 
-device=torch.device("cuda:0" if torch.cuda.is_available else "cpu")
+
+device = torch.device("cuda:0" if torch.cuda.is_available else "cpu")
 # Turn a Unicode string to plain ASCII, thanks to https://stackoverflow.com/a/518232/2809427
 SOS_token = 0
 EOS_token = 1
+
+
 class Lang:
     def __init__(self, name):
         self.name = name
-        self.word2index = {"SOS":0,"EOS":1}
+        self.word2index = {"SOS": 0, "EOS": 1}
         self.word2count = {}
         self.index2word = {0: "SOS", 1: "EOS"}
         self.n_words = 2  # Count SOS and EOS
@@ -35,6 +39,7 @@ class Lang:
         else:
             self.word2count[word] += 1
 
+
 def unicodeToAscii(s):
     return ''.join(
         c for c in unicodedata.normalize('NFD', s)
@@ -49,6 +54,7 @@ def normalizeString(s):
     s = re.sub(r"([.!?])", r" \1", s)
     s = re.sub(r"[^a-zA-Z.!?]+", r" ", s)
     return s
+
 
 def readLangs(lang1, lang2, reverse=False):
     print("Reading lines...")
@@ -70,9 +76,10 @@ def readLangs(lang1, lang2, reverse=False):
 
     return input_lang, output_lang, pairs
 
+
 MAX_LENGTH = 15
 eng_prefixes = (
-    "i m ", "i m ",
+    "i am ", "i m ",
     "he is", "he s ",
     "she is", "she s ",
     "you are", "you re ",
@@ -80,13 +87,16 @@ eng_prefixes = (
     "they are", "they re "
 )
 
+
 def filterPair(p):
     return len(p[0].split(' ')) < MAX_LENGTH and \
         len(p[1].split(' ')) < MAX_LENGTH and \
         p[1].startswith(eng_prefixes)
 
+
 def filterPairs(pairs):
     return [pair for pair in pairs if filterPair(pair)]
+
 
 def prepareData(lang1, lang2, reverse=False):
     input_lang, output_lang, pairs = readLangs(lang1, lang2, reverse)
@@ -102,14 +112,17 @@ def prepareData(lang1, lang2, reverse=False):
     print(output_lang.name, output_lang.n_words)
     return input_lang, output_lang, pairs
 
-def tensorFromPair(pair,lang1,lang2):
-    return tensorFromSentence(pair[0],lang1), tensorFromSentence(pair[1],lang2)
 
-def tensorFromSentence(line,lang):
-    index=[lang.word2index[word] for word in line.split(' ')]
+def tensorFromPair(pair, lang1, lang2):
+    return tensorFromSentence(pair[0], lang1), tensorFromSentence(pair[1], lang2)
+
+
+def tensorFromSentence(line, lang):
+    index = [lang.word2index[word] for word in line.split(' ')]
     index.append(EOS_token)
     return torch.tensor(index).to(device)
-import time
-if __name__=="__main__":
+
+
+if __name__ == "__main__":
     input_lang, output_lang, pairs = prepareData('eng', 'fra', True)
     print(output_lang.word2index["SOS"])

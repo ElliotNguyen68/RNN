@@ -1,15 +1,19 @@
-from inspect import trace
-from pickle import TRUE
+
 import torch
 import torch.nn as nn
-a=torch.rand((1,1,10))
-log=nn.LogSoftmax(dim=2)
-out=log(a)
-score,index=a.topk(3)
-print(score.view(3))
-print(index.view(3))
-a=[1,2,4]
-a.sort(reverse=True)
-b=[3,4,1]
-for x,y in zip(a,b):
-    print(x+y)
+a = torch.rand((5, 1, 3))
+b = torch.tensor([1, 2, 3, 4, 5], dtype=torch.float32)
+print(a)
+print(b)
+c = b.unsqueeze(1).unsqueeze(1)*a
+print(c)
+print(c.sum(dim=0))
+embed = nn.Embedding(num_embeddings=5, embedding_dim=3)
+test = torch.tensor([3])
+print(embed(test))
+a = torch.rand((2, 6))
+# a = a.permute(1, 0, 2)
+b = torch.tensor([0, 1])
+print(b.shape)
+l = nn.NLLLoss()
+print(l(a, b))

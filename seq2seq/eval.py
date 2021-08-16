@@ -1,5 +1,5 @@
 from utils import *
-from Seq2Seq_bi import *
+from Seq2Seq_bidirectional import *
 
 def eval(epochs,model,pairs,lang_in,lang_out):
     for epoch in range(epochs):
