@@ -182,12 +182,11 @@ class Seq2Seq(nn.Module):
         # encoder_outputs is all hidden states of the input sequence, back and forwards
         # hidden is the final forward and backward hidden states, passed through a linear layer
         encoder_outputs, hidden = self.encoder(src)
-
         # first input to the decoder is the <sos> tokens
         input = torch.tensor([0], device=device)
         loss = 0
         if train == False:
-            ans = []
+            ans_greedy = []
         for t in range(0, target_seq_length-1):
 
             # insert input token embedding, previous hidden state and all encoder hidden states
@@ -206,7 +205,7 @@ class Seq2Seq(nn.Module):
             input = target[t] if use_teacher_forcing else torch.tensor(
                 [index.item()]).to(device)
             try:
-                ans.append(index.item())
+                ans_greedy.append(index.item())
             except:
                 pass
             # print("input", input.shape)
@@ -224,7 +223,7 @@ class Seq2Seq(nn.Module):
         else:
             print(f"{loss:4f}")
             print(
-                f"greedy search: {' '.join(str(self.lang_out.index2word[i])for i in ans )}")
+                f"greedy search: {' '.join(str(self.lang_out.index2word[i])for i in ans_greedy )}")
 
     def count_parameters(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
@@ -238,13 +237,15 @@ class Seq2Seq(nn.Module):
                     a.pop(i)  # and make sure enough num_k element remaining
         self.eval()
         topk = []  # contain top k least negative score
-        _, hidden = self.encoder(input_sentence)
+        encoder_outputs, hidden = self.encoder(input_sentence)
+        print(encoder_outputs.shape)
         SOS = thread_sentence("SOS", -10, hidden)
         x = SOS
         word = x.arr[-1]
         hidden_word = x.hidden
-        input = torch.tensor([[self.lang_out.word2index[word]]], device=device)
-        out, hidden_word = self.decoder(input, hidden_word)
+        input = torch.tensor([self.lang_out.word2index[word]], device=device)
+        out, hidden_word = self.decoder(
+            input, hidden_word.detach(), encoder_outputs)
         scores, index = out.topk(num_k)
         scores = scores.view(num_k)
         index = index.view(num_k)
@@ -265,8 +266,9 @@ class Seq2Seq(nn.Module):
             hidden_word = x.hidden
             if word not in ['.', '!', '?', 'EOS']:
                 input = torch.tensor(
-                    [[self.lang_out.word2index[word]]], device=device)
-                out, hidden_word = self.decoder(input, hidden_word)
+                    [self.lang_out.word2index[word]], device=device)
+                out, hidden_word = self.decoder(
+                    input, hidden_word, encoder_outputs)
                 scores, index = out.topk(num_k)
                 scores = scores.view(num_k)
                 index = index.view(num_k)
@@ -286,7 +288,7 @@ class Seq2Seq(nn.Module):
             # topk.sort(key=lambda x: x.score,reverse=True)
             step += 1
             if step > 0 and (step) % num_k == 0:
-                clear(topk, lenght_current, input_sentence.shape[0])
+                clear(topk, lenght_current)
                 topk.sort(key=lambda x: x.score, reverse=True)
                 topk = topk[:num_k]
                 # print(id,len(topk))
@@ -342,4 +344,4 @@ if __name__ == "__main__":
     loss, out = seq2seq(input, output, train=True, p=0)
     print(loss)
     print(out.shape)
-    seq2seq(input, output, train=False, p=0)
+    seq2seq.decode_beam_search(input, num_k=3)
